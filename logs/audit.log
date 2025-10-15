@@ -1,0 +1,2 @@
+{"timestamp":"2025-10-15T21:38:52.615Z","userId":5,"action":"create_task","resource":"tasks","status":"success","details":{"taskTitle":"Test Task 1"},"ipAddress":null,"userAgent":null}
+{"timestamp":"2025-10-15T21:38:52.634Z","userId":5,"action":"create","resource":"tasks","status":"success","details":{"method":"POST","url":"/api/tasks?"},"ipAddress":"::1","userAgent":"PostmanRuntime/7.48.0"}

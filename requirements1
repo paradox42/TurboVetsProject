@@ -1,0 +1,29 @@
+Overview:
+You’ll build a secure task management system using a modular NX monorepo, with
+both frontend and backend components. The goal is to demonstrate your ability to
+design and implement a system where users with different roles can securely manage
+tasks within an organization
+
+Focus Areas (what we care about most):
+●
+How you designed and implemented RBAC (Role-Based Access Control)
+●
+How your guards/decorators enforce security at the service/API layer
+●
+Any trade-offs or design decisions in your RBAC implementation
+●
+Challenges you faced and how you solved them
+●
+What you’d improve with more time
+
+Secure, scalable RBAC implementation
+●
+Code clarity and maintainability
+●
+Functional and responsive UI
+●
+Effective state management (NgRx)
+●
+Quality of documentation and tests
+●
+Bonus: UI polish (drag-and-drop, dark mode, etc.)

@@ -7,12 +7,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { databaseConfig } from '../database/database.config';
 import { User, Organization, Role, Permission, Task } from '../entities';
 import { TasksModule } from '../tasks/tasks.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot(databaseConfig),
     TypeOrmModule.forFeature([User, Organization, Role, Permission, Task]),
     TasksModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

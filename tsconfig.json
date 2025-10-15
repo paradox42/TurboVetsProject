@@ -16,9 +16,6 @@
       "path": "./packages/utils"
     },
     {
-      "path": "./apps/api-e2e"
-    },
-    {
       "path": "./apps/api"
     },
     {
