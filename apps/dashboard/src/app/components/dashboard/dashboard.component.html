@@ -1,0 +1,79 @@
+<div class="dashboard-container">
+  <header class="dashboard-header">
+    <div class="header-content">
+      <h1>Task Management Dashboard</h1>
+      <div class="user-info">
+        <span class="welcome-text">Welcome, {{ user?.name }}!</span>
+        <div class="user-role">
+          <span class="role-badge" [class]="'role-' + (userRoles[0] || 'viewer')">
+            {{ userRoles[0] || 'viewer' | titlecase }}
+          </span>
+        </div>
+        <button class="logout-button" (click)="logout()">
+          Logout
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="dashboard-main">
+    <div class="dashboard-content">
+      <div class="welcome-section">
+        <h2>Welcome to TurboVets Task Management</h2>
+        <p>You are logged in as a <strong>{{ userRoles[0] || 'viewer' }}</strong> user.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <h3>📋 Tasks</h3>
+          <p>Manage your tasks and assignments</p>
+          <button class="feature-button" (click)="navigateToTasks()">
+            View Tasks
+          </button>
+        </div>
+
+        <div class="feature-card" *ngIf="isAdmin || isOwner">
+          <h3>👥 Organization</h3>
+          <p>Manage organization and team members</p>
+          <button class="feature-button" (click)="navigateToOrganization()">
+            Organization
+          </button>
+        </div>
+
+        <div class="feature-card" *ngIf="isOwner">
+          <h3>📊 Analytics</h3>
+          <p>View system analytics and reports</p>
+          <button class="feature-button" (click)="navigateToAnalytics()">
+            Analytics
+          </button>
+        </div>
+
+        <div class="feature-card" *ngIf="isOwner">
+          <h3>🔍 Audit Logs</h3>
+          <p>View system audit logs</p>
+          <button class="feature-button" (click)="navigateToAuditLogs()">
+            Audit Logs
+          </button>
+        </div>
+      </div>
+
+      <div class="user-details">
+        <h3>User Information</h3>
+        <div class="user-details-grid">
+          <div class="detail-item">
+            <strong>Name:</strong> {{ user?.name }}
+          </div>
+          <div class="detail-item">
+            <strong>Email:</strong> {{ user?.email }}
+          </div>
+          <div class="detail-item">
+            <strong>Roles:</strong> {{ userRoles.join(', ') }}
+          </div>
+          <div class="detail-item" *ngIf="user?.organization">
+            <strong>Organization:</strong> {{ user?.organization?.name }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
