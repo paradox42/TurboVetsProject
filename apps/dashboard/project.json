@@ -1,0 +1,28 @@
+{
+    "name": "dashboard",
+    "sourceRoot": "apps/dashboard/src",
+    "projectType": "application",
+    "targets": {
+      "serve": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "ng serve",
+          "cwd": "apps/dashboard"
+        }
+      },
+      "build": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "ng build",
+          "cwd": "apps/dashboard"
+        }
+      },
+      "test": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "ng test",
+          "cwd": "apps/dashboard"
+        }
+      }
+    }
+  }
