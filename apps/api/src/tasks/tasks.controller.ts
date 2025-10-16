@@ -43,7 +43,7 @@ export class TasksController {
       title: string;
       description?: string;
       category?: string;
-      priority?: number;
+      priority?: string;
       dueDate?: Date;
     }
   ) {
@@ -116,6 +116,15 @@ export class TasksController {
   async getOrganizationHierarchy(@Request() req: any) {
     const userId = req.user.id;
     return this.rbacService.getOrganizationHierarchy(userId);
+  }
+
+  // ===== USER MANAGEMENT =====
+  @Get('assignable-users')
+  @RequirePermissions('read_task')
+  @OrganizationScope('own')
+  async getAssignableUsers(@Request() req: any) {
+    const userId = req.user.id;
+    return this.rbacService.getAssignableUsers(userId);
   }
 
   // ===== AUDIT OPERATIONS =====

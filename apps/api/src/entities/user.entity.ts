@@ -34,6 +34,9 @@ export class User {
   @UpdateDateColumn()
   updatedAt!: Date;
 
+  @Column({ nullable: true })
+  organizationId?: number;
+
   @ManyToOne(
     () => Organization,
     (organization: Organization) => organization.users,

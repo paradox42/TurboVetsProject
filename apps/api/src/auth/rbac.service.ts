@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { Role } from '../entities/role.entity';
 import { Permission } from '../entities/permission.entity';
@@ -210,5 +210,39 @@ export class RbacService {
 
     // Regular users can only manage themselves
     return currentUserId === targetUserId;
+  }
+
+  async getAssignableUsers(userId: number): Promise<{
+    id: number;
+    name: string;
+    email: string;
+    organization: { id: number; name: string };
+  }[]> {
+    try {
+      const accessibleUserIds = await this.getAccessibleUserIds(userId, 'own');
+      
+      if (accessibleUserIds.length === 0) {
+        return [];
+      }
+      
+      const users = await this.userRepository.find({
+        where: { id: In(accessibleUserIds) },
+        relations: ['organization'],
+        select: ['id', 'name', 'email', 'organization'],
+      });
+
+      return users.map(user => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        organization: {
+          id: user.organization?.id || 0,
+          name: user.organization?.name || 'Unknown',
+        },
+      }));
+    } catch (error) {
+      console.error('Error in getAssignableUsers:', error);
+      throw error;
+    }
   }
 }

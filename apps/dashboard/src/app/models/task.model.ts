@@ -40,7 +40,7 @@ export interface CreateTaskRequest {
   description: string;
   status?: TaskStatus;
   priority?: TaskPriority;
-  assigneeId: number;
+  assigneeId?: number;
   dueDate?: string;
 }
 
@@ -81,7 +81,7 @@ export interface TaskFormData {
   description: string;
   status: TaskStatus;
   priority: TaskPriority;
-  assigneeId: number;
+  assigneeId: number | null;
   dueDate: string;
 }
 
@@ -89,7 +89,7 @@ export interface TaskListFilters {
   search: string;
   status: TaskStatus | 'all';
   priority: TaskPriority | 'all';
-  assigneeId: number | 'all';
+  assigneeId: number | 'all' | 'unassigned';
   sortBy: 'title' | 'status' | 'priority' | 'dueDate' | 'createdAt';
   sortOrder: 'asc' | 'desc';
 }

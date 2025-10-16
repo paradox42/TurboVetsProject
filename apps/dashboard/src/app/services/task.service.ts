@@ -3,6 +3,16 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Task, CreateTaskRequest, UpdateTaskRequest, TaskFilters } from '../models/task.model';
 
+export interface AssignableUser {
+  id: number;
+  name: string;
+  email: string;
+  organization: {
+    id: number;
+    name: string;
+  };
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -93,6 +103,13 @@ export class TaskService {
   // Get organization hierarchy
   getOrganizationHierarchy(): Observable<any> {
     return this.http.get<any>(`${this.API_URL}/tasks/organization/hierarchy`, { 
+      headers: this.getHeaders() 
+    });
+  }
+
+  // Get assignable users for task assignment
+  getAssignableUsers(): Observable<AssignableUser[]> {
+    return this.http.get<AssignableUser[]>(`${this.API_URL}/tasks/assignable-users`, { 
       headers: this.getHeaders() 
     });
   }

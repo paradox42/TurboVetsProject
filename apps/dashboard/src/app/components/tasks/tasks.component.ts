@@ -2,7 +2,7 @@ import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { TaskService } from '../../services/task.service';
+import { TaskService, AssignableUser } from '../../services/task.service';
 import { AuthService } from '../../services/auth.service';
 import {
   Task,
@@ -34,6 +34,7 @@ export class TasksComponent implements OnInit {
   selectedTask = signal<Task | null>(null);
   showTaskForm = signal(false);
   isEditing = signal(false);
+  assignableUsers = signal<AssignableUser[]>([]);
 
   // Filter form
   filterForm: FormGroup;
@@ -89,6 +90,7 @@ export class TasksComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadTasks();
+    this.loadAssignableUsers();
 
     // Watch filter changes
     this.filterForm.valueChanges.subscribe(() => {
@@ -120,6 +122,17 @@ export class TasksComponent implements OnInit {
     });
   }
 
+  loadAssignableUsers(): void {
+    this.taskService.getAssignableUsers().subscribe({
+      next: (users) => {
+        this.assignableUsers.set(users);
+      },
+      error: (error) => {
+        console.error('Error loading assignable users:', error);
+      },
+    });
+  }
+
   applyFilters(): void {
     const filters = this.filterForm.value;
     let filtered = [...this.tasks()];
@@ -146,7 +159,11 @@ export class TasksComponent implements OnInit {
 
     // Apply assignee filter
     if (filters.assigneeId !== 'all') {
-      filtered = filtered.filter((task) => task.assigneeId === filters.assigneeId);
+      if (filters.assigneeId === 'unassigned') {
+        filtered = filtered.filter((task) => !task.assigneeId);
+      } else {
+        filtered = filtered.filter((task) => task.assigneeId === filters.assigneeId);
+      }
     }
 
     // Apply sorting
@@ -226,7 +243,7 @@ export class TasksComponent implements OnInit {
           description: formData.description,
           status: formData.status,
           priority: formData.priority,
-          assigneeId: formData.assigneeId,
+          assigneeId: formData.assigneeId || undefined,
           dueDate: formData.dueDate || undefined,
         };
 
@@ -246,7 +263,7 @@ export class TasksComponent implements OnInit {
           description: formData.description,
           status: formData.status,
           priority: formData.priority,
-          assigneeId: formData.assigneeId,
+          assigneeId: formData.assigneeId || undefined,
           dueDate: formData.dueDate || undefined,
         };
 
@@ -334,6 +351,12 @@ export class TasksComponent implements OnInit {
   isOverdue(task: Task): boolean {
     if (!task.dueDate || task.status === TaskStatus.COMPLETED) return false;
     return new Date(task.dueDate) < new Date();
+  }
+
+  // Helper method to get user name by ID
+  getUserName(userId: number): string {
+    const user = this.assignableUsers().find(u => u.id === userId);
+    return user ? `${user.name} (${user.email})` : 'Unknown User';
   }
 
   // Enum getters for template
