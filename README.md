@@ -1,203 +1,715 @@
-# Nx TypeScript Repository
+# 🚀 Secure Task Management System
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+A full-stack task management system built with **NestJS**, **Angular**, and **NX** featuring comprehensive **Role-Based Access Control (RBAC)**, **JWT authentication**, and **drag-and-drop** task management.
 
-✨ A repository showcasing key [Nx](https://nx.dev) features for TypeScript monorepos ✨
+## 📌 Overview
 
-## 📦 Project Overview
+This project demonstrates a production-ready secure task management system with:
 
-This repository demonstrates a production-ready TypeScript monorepo with:
+- **🔐 Real JWT Authentication** - No mock authentication
+- **👥 Role-Based Access Control (RBAC)** - Owner, Admin, Viewer roles
+- **🏢 Organization Hierarchy** - 2-level organizational structure
+- **📋 Task Management** - Full CRUD with drag-and-drop
+- **🔍 Audit Logging** - Complete action tracking
+- **🧪 Comprehensive Testing** - 33+ tests covering core functionality
+- **📱 Responsive Design** - Mobile-first approach
 
-- **3 Publishable Packages** - Ready for NPM publishing
+## 🏗️ Architecture Overview
 
-  - `@org/strings` - String manipulation utilities
-  - `@org/async` - Async utility functions with retry logic
-  - `@org/colors` - Color conversion and manipulation utilities
+### NX Monorepo Structure
 
-- **1 Internal Library**
-  - `@org/utils` - Shared utilities (private, not published)
+```
+TurboVetsProject/
+├── apps/
+│   ├── api/                    # NestJS Backend
+│   │   ├── src/
+│   │   │   ├── auth/          # Authentication & RBAC
+│   │   │   ├── tasks/         # Task management
+│   │   │   ├── entities/      # TypeORM entities
+│   │   │   └── database/      # Database configuration
+│   │   └── dist/              # Built application
+│   └── dashboard/             # Angular Frontend
+│       ├── src/
+│       │   ├── components/    # UI components
+│       │   ├── services/      # API services
+│       │   └── models/        # TypeScript interfaces
+│       └── dist/              # Built application
+├── packages/                  # Shared libraries
+│   ├── @org/strings          # String utilities
+│   ├── @org/async            # Async utilities
+│   ├── @org/colors           # Color utilities
+│   └── @org/utils            # Shared utilities
+└── data/
+    └── app.db                # SQLite database
+```
+
+### Key Design Decisions
+
+1. **Modular Architecture**: NX monorepo enables code sharing and consistent tooling
+2. **Security-First**: RBAC implemented at service layer with decorators/guards
+3. **Type Safety**: Full TypeScript coverage with shared interfaces
+4. **Testing Strategy**: Comprehensive backend tests, frontend component tests
+5. **Database**: SQLite for development, easily configurable for production
 
 ## 🚀 Quick Start
 
+### Prerequisites
+
+- Node.js 18+ 
+- npm or yarn
+- Git
+
+### Installation
+
 ```bash
 # Clone the repository
-git clone <your-fork-url>
-cd typescript-template
+git clone <your-repo-url>
+cd TurboVetsProject
 
 # Install dependencies
 npm install
 
-# Build all packages
-npx nx run-many -t build
-
-# Run tests
-npx nx run-many -t test
-
-# Lint all projects
-npx nx run-many -t lint
-
-# Run everything in parallel
-npx nx run-many -t lint test build --parallel=3
-
-# Visualize the project graph
-npx nx graph
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your configuration
 ```
 
-## ⭐ Featured Nx Capabilities
+### Environment Setup
 
-This repository showcases several powerful Nx features:
+Create a `.env` file in the root directory:
 
-### 1. 🔒 Module Boundaries
+```env
+# JWT Configuration
+JWT_SECRET=your-super-secret-jwt-key-here
+JWT_EXPIRES_IN=24h
 
-Enforces architectural constraints using tags. Each package has specific dependencies it can use:
+# Database Configuration
+DB_TYPE=sqlite
+DB_DATABASE=data/app.db
 
-- `scope:shared` (utils) - Can be used by all packages
-- `scope:strings` - Can only depend on shared utilities
-- `scope:async` - Can only depend on shared utilities
-- `scope:colors` - Can only depend on shared utilities
+# Application Configuration
+PORT=3000
+NODE_ENV=development
+```
 
-**Try it out:**
+### Running the Applications
 
 ```bash
-# See the current project graph and boundaries
-npx nx graph
+# Start the backend API
+npx nx serve api
 
-# View a specific project's details
-npx nx show project strings --web
+# Start the frontend dashboard (in another terminal)
+npx nx serve dashboard
+
+# Or run both in parallel
+npx nx run-many -t serve --projects=api,dashboard --parallel=2
 ```
 
-[Learn more about module boundaries →](https://nx.dev/features/enforce-module-boundaries)
+The applications will be available at:
+- **Backend API**: http://localhost:3000
+- **Frontend Dashboard**: http://localhost:4200
 
-### 2. 🛠️ Custom Run Commands
+### Database Setup
 
-Packages can define custom commands beyond standard build/test/lint:
+The SQLite database is automatically created and seeded with initial data:
 
 ```bash
-# Run the custom build-base command for strings package
-npx nx run strings:build-base
+# Seed the database with sample data
+npx nx run api:seed
 
-# See all available targets for a project
-npx nx show project strings
+# Or manually run the seed script
+cd apps/api
+npm run seed
 ```
 
-[Learn more about custom run commands →](https://nx.dev/concepts/executors-and-configurations)
+## 📊 Data Model
 
-### 3. 🔧 Self-Healing CI
+### Entity Relationship Diagram
 
-The CI pipeline includes `nx fix-ci` which automatically identifies and suggests fixes for common issues. To test it, you can make a change to `async-retry.spec.ts` so that it fails, and create a PR.
+```mermaid
+erDiagram
+    Organization ||--o{ User : contains
+    Organization ||--o{ Role : defines
+    User ||--o{ Task : creates
+    User }o--|| Role : has
+    Role ||--o{ Permission : grants
+    Task }o--o| User : assigned_to
+    
+    Organization {
+        int id PK
+        string name
+        int parentId FK
+        datetime createdAt
+        datetime updatedAt
+    }
+    
+    User {
+        int id PK
+        string name
+        string email
+        string password
+        int organizationId FK
+        int roleId FK
+        datetime createdAt
+        datetime updatedAt
+    }
+    
+    Role {
+        int id PK
+        string name
+        int organizationId FK
+        datetime createdAt
+        datetime updatedAt
+    }
+    
+    Permission {
+        int id PK
+        string name
+        string resource
+        datetime createdAt
+        datetime updatedAt
+    }
+    
+    Task {
+        int id PK
+        string title
+        string description
+        string status
+        string priority
+        int userId FK
+        int assigneeId FK
+        datetime dueDate
+        datetime createdAt
+        datetime updatedAt
+    }
+```
+
+### Core Entities
+
+#### User
+- **Primary Key**: `id`
+- **Authentication**: `email`, `password` (bcrypt hashed)
+- **Relationships**: Belongs to Organization, Has Role, Creates Tasks
+
+#### Organization
+- **Hierarchy**: 2-level structure (parent-child)
+- **Scoping**: Determines data access boundaries
+- **Roles**: Defines available roles within organization
+
+#### Task
+- **Status**: PENDING, IN_PROGRESS, COMPLETED, CANCELLED
+- **Priority**: LOW, MEDIUM, HIGH, URGENT
+- **Assignment**: Can be assigned to users within same organization
+
+#### Role & Permissions
+- **Roles**: Owner, Admin, Viewer
+- **Permissions**: create_task, read_task, update_task, delete_task, etc.
+- **Inheritance**: Higher roles inherit lower role permissions
+
+## 🔐 Access Control Implementation
+
+### RBAC Architecture
+
+The system implements a comprehensive Role-Based Access Control system:
+
+#### 1. **Authentication Layer**
+```typescript
+// JWT Strategy
+@Injectable()
+export class JwtStrategy extends PassportStrategy(Strategy) {
+  async validate(payload: any) {
+    return { userId: payload.sub, email: payload.email, roles: payload.roles };
+  }
+}
+```
+
+#### 2. **Authorization Decorators**
+```typescript
+// Permission-based access
+@RequirePermissions('create_task')
+@Post()
+async createTask(@Body() createTaskDto: CreateTaskDto) {
+  // Only users with 'create_task' permission can access
+}
+
+// Role-based access
+@RequireRoles('Admin', 'Owner')
+@Get('admin/stats')
+async getAdminStats() {
+  // Only Admin and Owner roles can access
+}
+
+// Organization scope
+@OrganizationScope('own')
+@Get('tasks')
+async getTasks() {
+  // Users can only access tasks within their organization
+}
+```
+
+#### 3. **Guard Implementation**
+```typescript
+@Injectable()
+export class PermissionsGuard implements CanActivate {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const requiredPermissions = this.reflector.getAllAndOverride<string[]>(
+      PERMISSIONS_KEY, [context.getHandler(), context.getClass()]
+    );
+    
+    // Check user permissions against required permissions
+    const hasPermission = await this.rbacService.hasPermission(
+      user.id, permission
+    );
+    
+    return hasPermission;
+  }
+}
+```
+
+### Permission Matrix
+
+| Role    | Create Task | Read Task | Update Task | Delete Task | Admin Access |
+|---------|-------------|-----------|-------------|-------------|--------------|
+| Owner   | ✅          | ✅         | ✅          | ✅          | ✅           |
+| Admin   | ✅          | ✅         | ✅          | ✅          | ✅           |
+| Viewer  | ❌          | ✅         | ❌          | ❌          | ❌           |
+
+### Organization Scoping
+
+- **`own`**: Access only within user's organization
+- **`sub`**: Access within user's organization and sub-organizations
+- **`all`**: Access across all organizations (Owner/Admin only)
+
+## 🛠️ API Documentation
+
+### Authentication Endpoints
+
+#### POST /auth/login
+Authenticate user and receive JWT token.
+
+**Request:**
+```json
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
+
+**Response:**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": 1,
+    "name": "John Doe",
+    "email": "user@example.com",
+    "roles": ["Admin"]
+  }
+}
+```
+
+### Task Management Endpoints
+
+#### GET /tasks
+Retrieve tasks based on user's permissions and organization scope.
+
+**Headers:**
+```
+Authorization: Bearer <jwt-token>
+```
+
+**Query Parameters:**
+- `status`: Filter by task status (pending, in_progress, completed, cancelled)
+- `assigneeId`: Filter by assignee ID
+- `organizationId`: Filter by organization ID
+
+**Response:**
+```json
+[
+  {
+    "id": 1,
+    "title": "Complete project documentation",
+    "description": "Write comprehensive README",
+    "status": "in_progress",
+    "priority": "high",
+    "assigneeId": 2,
+    "dueDate": "2024-12-31T23:59:59.000Z",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T12:00:00.000Z"
+  }
+]
+```
+
+#### POST /tasks
+Create a new task.
+
+**Request:**
+```json
+{
+  "title": "New Task",
+  "description": "Task description",
+  "priority": "medium",
+  "assigneeId": 2,
+  "dueDate": "2024-12-31T23:59:59.000Z"
+}
+```
+
+**Response:**
+```json
+{
+  "id": 3,
+  "title": "New Task",
+  "description": "Task description",
+  "status": "pending",
+  "priority": "medium",
+  "assigneeId": 2,
+  "dueDate": "2024-12-31T23:59:59.000Z",
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "updatedAt": "2024-01-01T00:00:00.000Z"
+}
+```
+
+#### PUT /tasks/:id
+Update an existing task.
+
+**Request:**
+```json
+{
+  "title": "Updated Task Title",
+  "status": "in_progress",
+  "priority": "high"
+}
+```
+
+#### DELETE /tasks/:id
+Delete a task.
+
+**Response:**
+```
+HTTP 204 No Content
+```
+
+#### GET /tasks/assignable-users
+Get list of users that can be assigned tasks.
+
+**Response:**
+```json
+[
+  {
+    "id": 1,
+    "name": "John Doe",
+    "email": "john@example.com",
+    "organization": {
+      "id": 1,
+      "name": "Acme Corp"
+    }
+  }
+]
+```
+
+### Admin Endpoints
+
+#### GET /tasks/admin/stats
+Get organization statistics (Admin/Owner only).
+
+**Response:**
+```json
+{
+  "totalTasks": 150,
+  "ownOrgTasks": 100,
+  "subOrgTasks": 50,
+  "hierarchy": {
+    "id": 1,
+    "name": "Acme Corp",
+    "children": [
+      {
+        "id": 2,
+        "name": "Engineering Team"
+      }
+    ]
+  }
+}
+```
+
+#### GET /audit-logs
+Retrieve audit logs (Admin/Owner only).
+
+**Response:**
+```json
+[
+  {
+    "timestamp": "2024-01-01T12:00:00.000Z",
+    "userId": 1,
+    "action": "create_task",
+    "resource": "tasks",
+    "status": "success",
+    "details": {"taskId": 123},
+    "ipAddress": "192.168.1.1",
+    "userAgent": "Mozilla/5.0..."
+  }
+]
+```
+
+## 🧪 Testing
+
+### Backend Tests
+
+The backend includes comprehensive test coverage:
 
 ```bash
-# Run tests and see the failure
-npx nx test async
+# Run all backend tests
+npx nx test api
 
-# In CI, this command provides automated fixes
-npx nx fix-ci
+# Run specific test suites
+npx nx test api --testPathPattern=tasks
+npx nx test api --testPathPattern=auth
 ```
 
-[Learn more about self-healing CI →](https://nx.dev/ci/features/self-healing-ci)
+**Test Coverage:**
+- ✅ **Tasks Service** - CRUD operations, business logic
+- ✅ **Tasks Controller** - API endpoints, request handling
+- ✅ **JWT Auth Guard** - Authentication security
+- ✅ **Audit Service** - Logging functionality
+- ✅ **App Service/Controller** - Basic functionality
 
-### 4. 📦 Package Publishing
+**Total: 33 tests passing**
 
-Manage releases and publishing with Nx Release:
+### Frontend Tests
 
 ```bash
-# Dry run to see what would be published
-npx nx release --dry-run
-
-# Version and release packages
-npx nx release
-
-# Publish only specific packages
-npx nx release publish --projects=strings,colors
+# Run frontend tests
+npx nx test dashboard
 ```
 
-[Learn more about Nx Release →](https://nx.dev/features/manage-releases)
+### Test Examples
 
-## 📁 Project Structure
-
+```typescript
+// Example: Task Service Test
+describe('TasksService', () => {
+  it('should create a new task', async () => {
+    const createTaskDto = {
+      title: 'Test Task',
+      description: 'Test Description',
+      userId: 1
+    };
+    
+    const result = await service.create(createTaskDto);
+    
+    expect(result.title).toBe('Test Task');
+    expect(result.userId).toBe(1);
+  });
+});
 ```
-├── packages/
-│   ├── strings/     [scope:strings] - String utilities (publishable)
-│   ├── async/       [scope:async]   - Async utilities (publishable)
-│   ├── colors/      [scope:colors]  - Color utilities (publishable)
-│   └── utils/       [scope:shared]  - Shared utilities (private)
-├── nx.json          - Nx configuration
-├── tsconfig.json    - TypeScript configuration
-└── eslint.config.mjs - ESLint with module boundary rules
-```
 
-## 🏷️ Understanding Tags
+## 🎨 Frontend Features
 
-This repository uses tags to enforce module boundaries:
+### Task Management Dashboard
 
-| Package        | Tag             | Can Import From        |
-| -------------- | --------------- | ---------------------- |
-| `@org/utils`   | `scope:shared`  | Nothing (base library) |
-| `@org/strings` | `scope:strings` | `scope:shared`         |
-| `@org/async`   | `scope:async`   | `scope:shared`         |
-| `@org/colors`  | `scope:colors`  | `scope:shared`         |
+- **📋 Kanban Board** - Drag-and-drop task management
+- **🔍 Advanced Filtering** - Filter by status, priority, assignee
+- **👥 User Assignment** - Dropdown selection for task assignment
+- **📊 Task Statistics** - Visual progress indicators
+- **📱 Responsive Design** - Mobile-first approach
 
-The ESLint configuration enforces these boundaries, preventing circular dependencies and maintaining clean architecture.
+### Key Components
 
-## 🧪 Testing Module Boundaries
+#### Task Component
+- **Drag & Drop**: Move tasks between status columns
+- **Real-time Updates**: Immediate UI feedback
+- **Form Validation**: Client-side validation with error handling
+- **User Assignment**: Dynamic user selection
 
-To see module boundary enforcement in action:
+#### Authentication
+- **JWT Integration**: Automatic token management
+- **Route Guards**: Protected routes based on authentication
+- **Role-based UI**: Different interfaces for different roles
 
-1. Try importing `@org/colors` into `@org/strings`
-2. Run `npx nx lint strings`
-3. You'll see an error about violating module boundaries
-
-## 📚 Useful Commands
+## 🚀 Development Commands
 
 ```bash
-# Project exploration
-npx nx graph                                    # Interactive dependency graph
-npx nx list                                     # List installed plugins
-npx nx show project strings --web              # View project details
-
 # Development
-npx nx build strings                           # Build a specific package
-npx nx test async                              # Test a specific package
-npx nx lint colors                             # Lint a specific package
+npx nx serve api                    # Start backend
+npx nx serve dashboard              # Start frontend
+npx nx run-many -t serve --parallel=2  # Start both
 
-# Running multiple tasks
-npx nx run-many -t build                       # Build all projects
-npx nx run-many -t test --parallel=3          # Test in parallel
-npx nx run-many -t lint test build            # Run multiple targets
+# Building
+npx nx build api                    # Build backend
+npx nx build dashboard              # Build frontend
+npx nx run-many -t build            # Build all
 
-# Affected commands (great for CI)
-npx nx affected -t build                       # Build only affected projects
-npx nx affected -t test                        # Test only affected projects
+# Testing
+npx nx test api                     # Test backend
+npx nx test dashboard               # Test frontend
+npx nx run-many -t test             # Test all
 
-# Release management
-npx nx release --dry-run                       # Preview release changes
-npx nx release                                 # Create a new release
+# Linting
+npx nx lint api                     # Lint backend
+npx nx lint dashboard               # Lint frontend
+npx nx run-many -t lint             # Lint all
+
+# Database
+npx nx run api:seed                 # Seed database
+npx nx run api:reset                # Reset database
+
+# Utilities
+npx nx graph                        # View project graph
+npx nx show project api             # Show project details
+npx nx affected -t test             # Test affected projects
 ```
 
-## Nx Cloud
+## 🔧 Configuration
 
-Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
+### Backend Configuration
 
-- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+**Database (TypeORM):**
+```typescript
+// apps/api/src/database/database.config.ts
+export const databaseConfig: TypeOrmModuleOptions = {
+  type: 'sqlite',
+  database: 'data/app.db',
+  entities: [User, Organization, Role, Permission, Task],
+  synchronize: true, // Only for development
+  logging: false
+};
+```
 
-## 🔗 Learn More
+**JWT Configuration:**
+```typescript
+// apps/api/src/auth/auth.module.ts
+JwtModule.register({
+  secret: process.env.JWT_SECRET,
+  signOptions: { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
+})
+```
 
-- [Nx Documentation](https://nx.dev)
-- [Module Boundaries](https://nx.dev/features/enforce-module-boundaries)
-- [Custom Commands](https://nx.dev/concepts/executors-and-configurations)
-- [Self-Healing CI](https://nx.dev/ci/features/self-healing-ci)
-- [Releasing Packages](https://nx.dev/features/manage-releases)
-- [Nx Cloud](https://nx.dev/ci/intro/why-nx-cloud)
+### Frontend Configuration
 
-## 💬 Community
+**API Configuration:**
+```typescript
+// apps/dashboard/src/app/services/task.service.ts
+private readonly API_URL = 'http://localhost:3000/api';
+```
 
-Join the Nx community:
+**Angular Configuration:**
+```typescript
+// apps/dashboard/src/app/app.config.ts
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideHttpClient(),
+    provideRouter(routes),
+    // ... other providers
+  ]
+};
+```
 
-- [Discord](https://go.nx.dev/community)
-- [X (Twitter)](https://twitter.com/nxdevtools)
-- [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [YouTube](https://www.youtube.com/@nxdevtools)
-- [Blog](https://nx.dev/blog)
+## 🚀 Deployment
+
+### Production Build
+
+```bash
+# Build for production
+npx nx build api --configuration=production
+npx nx build dashboard --configuration=production
+
+# The built applications will be in:
+# - apps/api/dist/
+# - apps/dashboard/dist/dashboard/
+```
+
+### Environment Variables
+
+Create production environment files:
+
+**Backend (.env.production):**
+```env
+JWT_SECRET=your-production-secret-key
+JWT_EXPIRES_IN=1h
+DB_TYPE=postgres
+DB_HOST=your-db-host
+DB_PORT=5432
+DB_USERNAME=your-username
+DB_PASSWORD=your-password
+DB_DATABASE=task_management
+NODE_ENV=production
+PORT=3000
+```
+
+**Frontend (environment.prod.ts):**
+```typescript
+export const environment = {
+  production: true,
+  apiUrl: 'https://your-api-domain.com/api'
+};
+```
+
+## 🔮 Future Considerations
+
+### Advanced Features
+
+1. **Advanced Role Delegation**
+   - Temporary role assignments
+   - Role inheritance chains
+   - Custom permission sets
+
+2. **Production-Ready Security**
+   - JWT refresh tokens
+   - CSRF protection
+   - Rate limiting
+   - RBAC caching
+
+3. **Scaling Permission Checks**
+   - Redis caching for permissions
+   - Database query optimization
+   - Microservice architecture
+
+4. **Enhanced UI/UX**
+   - Real-time notifications
+   - Advanced task filtering
+   - Bulk operations
+   - Keyboard shortcuts
+
+5. **Monitoring & Analytics**
+   - Performance metrics
+   - User activity tracking
+   - System health monitoring
+
+### Technical Improvements
+
+1. **Database Migration**
+   - PostgreSQL for production
+   - Database migrations
+   - Connection pooling
+
+2. **Caching Strategy**
+   - Redis for session management
+   - Query result caching
+   - CDN for static assets
+
+3. **API Enhancements**
+   - GraphQL support
+   - WebSocket for real-time updates
+   - API versioning
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **NestJS** - Progressive Node.js framework
+- **Angular** - Modern web framework
+- **NX** - Smart monorepo build system
+- **TypeORM** - Object-relational mapping
+- **Angular CDK** - Drag and drop functionality
+
+---
+
+**Built with ❤️ using NX, NestJS, and Angular**

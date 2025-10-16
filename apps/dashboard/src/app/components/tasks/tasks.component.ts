@@ -378,18 +378,13 @@ export class TasksComponent implements OnInit {
   }
 
   onStatusDrop(event: CdkDragDrop<Task[]>, newStatus: TaskStatus): void {
-    console.log('Drop event:', event);
-    console.log('New status:', newStatus);
-    
     if (event.previousContainer === event.container) {
       // Reordering within the same status column
-      console.log('Reordering within same column');
       moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
       this.updateTaskOrder();
     } else {
       // Moving between different status columns
       const task = event.previousContainer.data[event.previousIndex];
-      console.log('Moving task between columns:', task);
       
       if (task) {
         // Update the task status in the backend
@@ -409,14 +404,9 @@ export class TasksComponent implements OnInit {
   private updateLocalTaskStatus(taskId: number, newStatus: TaskStatus): void {
     // Update the task status in the local state immediately
     const currentTasks = this.tasks();
-    console.log('Current tasks before update:', currentTasks.length);
-    
     const updatedTasks = currentTasks.map(task => 
       task.id === taskId ? { ...task, status: newStatus } : task
     );
-    
-    console.log('Updated tasks after status change:', updatedTasks.length);
-    console.log('Task with new status:', updatedTasks.find(t => t.id === taskId));
     
     this.tasks.set(updatedTasks);
     this.applyFilters();
