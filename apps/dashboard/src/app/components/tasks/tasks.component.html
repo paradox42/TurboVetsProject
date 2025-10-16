@@ -145,38 +145,58 @@
     </button>
   </div>
 
-  <!-- Task List -->
-  <div class="tasks-list" *ngIf="!isLoading() && filteredTasks().length > 0">
-    <div class="task-item" 
-         *ngFor="let task of filteredTasks()" 
-         [class.overdue]="isOverdue(task)"
-         [class.completed]="task.status === TaskStatus.COMPLETED">
-      
-      <div class="task-header">
-        <div class="task-title-section">
-          <h3 class="task-title">{{ task.title }}</h3>
-          <div class="task-meta">
-            <span class="task-id">#{{ task.id }}</span>
-            <span class="task-organization" *ngIf="task.organization">
-              {{ task.organization.name }}
-            </span>
-          </div>
-        </div>
-        
-        <div class="task-actions">
-          <select 
-            [(ngModel)]="task.status" 
-            (ngModelChange)="updateTaskStatus(task, $event)"
-            class="status-select"
-            [class]="getStatusClass(task.status)"
-          >
-            <option [value]="TaskStatus.PENDING">To Do</option>
-            <option [value]="TaskStatus.IN_PROGRESS">In Progress</option>
-            <option [value]="TaskStatus.COMPLETED">Completed</option>
-            <option [value]="TaskStatus.CANCELLED">Cancelled</option>
-          </select>
+  <!-- Kanban Board with Drag and Drop -->
+  <div class="kanban-board" *ngIf="!isLoading() && filteredTasks().length > 0">
+    <div class="kanban-column" 
+         cdkDropList
+         id="pending"
+         [cdkDropListData]="getTasksByStatus(TaskStatus.PENDING)"
+         (cdkDropListDropped)="onStatusDrop($event, TaskStatus.PENDING)"
+         [class]="'status-' + TaskStatus.PENDING"
+         [cdkDropListConnectedTo]="['pending', 'in_progress', 'completed', 'cancelled']">
+      <div class="column-header">
+        <h3>To Do</h3>
+        <span class="task-count">{{ getTasksByStatus(TaskStatus.PENDING).length }}</span>
+      </div>
+      <div class="column-content">
+        <div class="task-card" 
+             cdkDrag
+             [cdkDragData]="task"
+             (cdkDragStarted)="onTaskDragStarted($event, task)"
+             (cdkDragEnded)="onTaskDragEnded($event)"
+             *ngFor="let task of getTasksByStatus(TaskStatus.PENDING)" 
+             [class.overdue]="isOverdue(task)"
+             [class.dragging]="draggedTask()?.id === task.id">
           
-          <div class="action-buttons">
+          <div class="task-card-header">
+            <div class="drag-handle" cdkDragHandle>
+              <span class="icon-emoji">⋮⋮</span>
+            </div>
+            <h4 class="task-title">{{ task.title }}</h4>
+          </div>
+          
+          <div class="task-card-content">
+            <p class="task-description" *ngIf="task.description">{{ task.description }}</p>
+            
+            <div class="task-meta">
+              <span class="task-id">#{{ task.id }}</span>
+              <span class="priority-badge" [class]="getPriorityClass(task.priority)">
+                {{ getPriorityText(task.priority) | titlecase }}
+              </span>
+            </div>
+            
+            <div class="task-details" *ngIf="task.assigneeId">
+              <span class="assignee">{{ getUserName(task.assigneeId) }}</span>
+            </div>
+            
+            <div class="task-details" *ngIf="task.dueDate">
+              <span class="due-date" [class.overdue]="isOverdue(task)">
+                {{ formatDate(task.dueDate) }}
+              </span>
+            </div>
+          </div>
+          
+          <div class="task-card-actions">
             <button class="btn-icon" (click)="openTaskForm(task)" title="Edit">
               <span class="icon-emoji">✏️</span>
             </button>
@@ -186,33 +206,180 @@
           </div>
         </div>
       </div>
+    </div>
 
-      <div class="task-content">
-        <p class="task-description">{{ task.description }}</p>
-        
-        <div class="task-details">
-          <div class="task-detail">
-            <span class="detail-label">Priority:</span>
-            <span class="priority-badge" [class]="getPriorityClass(task.priority)">
-              {{ getPriorityText(task.priority) | titlecase }}
-            </span>
+    <div class="kanban-column" 
+         cdkDropList
+         id="in_progress"
+         [cdkDropListData]="getTasksByStatus(TaskStatus.IN_PROGRESS)"
+         (cdkDropListDropped)="onStatusDrop($event, TaskStatus.IN_PROGRESS)"
+         [class]="'status-' + TaskStatus.IN_PROGRESS"
+         [cdkDropListConnectedTo]="['pending', 'in_progress', 'completed', 'cancelled']">
+      <div class="column-header">
+        <h3>In Progress</h3>
+        <span class="task-count">{{ getTasksByStatus(TaskStatus.IN_PROGRESS).length }}</span>
+      </div>
+      <div class="column-content">
+        <div class="task-card" 
+             cdkDrag
+             [cdkDragData]="task"
+             (cdkDragStarted)="onTaskDragStarted($event, task)"
+             (cdkDragEnded)="onTaskDragEnded($event)"
+             *ngFor="let task of getTasksByStatus(TaskStatus.IN_PROGRESS)" 
+             [class.overdue]="isOverdue(task)"
+             [class.dragging]="draggedTask()?.id === task.id">
+          
+          <div class="task-card-header">
+            <div class="drag-handle" cdkDragHandle>
+              <span class="icon-emoji">⋮⋮</span>
+            </div>
+            <h4 class="task-title">{{ task.title }}</h4>
           </div>
           
-          <div class="task-detail" *ngIf="task.assigneeId">
-            <span class="detail-label">Assignee:</span>
-            <span class="assignee">{{ getUserName(task.assigneeId) }}</span>
+          <div class="task-card-content">
+            <p class="task-description" *ngIf="task.description">{{ task.description }}</p>
+            
+            <div class="task-meta">
+              <span class="task-id">#{{ task.id }}</span>
+              <span class="priority-badge" [class]="getPriorityClass(task.priority)">
+                {{ getPriorityText(task.priority) | titlecase }}
+              </span>
+            </div>
+            
+            <div class="task-details" *ngIf="task.assigneeId">
+              <span class="assignee">{{ getUserName(task.assigneeId) }}</span>
+            </div>
+            
+            <div class="task-details" *ngIf="task.dueDate">
+              <span class="due-date" [class.overdue]="isOverdue(task)">
+                {{ formatDate(task.dueDate) }}
+              </span>
+            </div>
           </div>
           
-          <div class="task-detail" *ngIf="task.dueDate">
-            <span class="detail-label">Due Date:</span>
-            <span class="due-date" [class.overdue]="isOverdue(task)">
-              {{ formatDate(task.dueDate) }}
-            </span>
+          <div class="task-card-actions">
+            <button class="btn-icon" (click)="openTaskForm(task)" title="Edit">
+              <span class="icon-emoji">✏️</span>
+            </button>
+            <button class="btn-icon danger" (click)="deleteTask(task)" title="Delete">
+              <span class="icon-emoji">🗑️</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="kanban-column" 
+         cdkDropList
+         id="completed"
+         [cdkDropListData]="getTasksByStatus(TaskStatus.COMPLETED)"
+         (cdkDropListDropped)="onStatusDrop($event, TaskStatus.COMPLETED)"
+         [class]="'status-' + TaskStatus.COMPLETED"
+         [cdkDropListConnectedTo]="['pending', 'in_progress', 'completed', 'cancelled']">
+      <div class="column-header">
+        <h3>Completed</h3>
+        <span class="task-count">{{ getTasksByStatus(TaskStatus.COMPLETED).length }}</span>
+      </div>
+      <div class="column-content">
+        <div class="task-card" 
+             cdkDrag
+             [cdkDragData]="task"
+             (cdkDragStarted)="onTaskDragStarted($event, task)"
+             (cdkDragEnded)="onTaskDragEnded($event)"
+             *ngFor="let task of getTasksByStatus(TaskStatus.COMPLETED)" 
+             [class.dragging]="draggedTask()?.id === task.id">
+          
+          <div class="task-card-header">
+            <div class="drag-handle" cdkDragHandle>
+              <span class="icon-emoji">⋮⋮</span>
+            </div>
+            <h4 class="task-title">{{ task.title }}</h4>
           </div>
           
-          <div class="task-detail">
-            <span class="detail-label">Created:</span>
-            <span class="created-date">{{ formatDate(task.createdAt) }}</span>
+          <div class="task-card-content">
+            <p class="task-description" *ngIf="task.description">{{ task.description }}</p>
+            
+            <div class="task-meta">
+              <span class="task-id">#{{ task.id }}</span>
+              <span class="priority-badge" [class]="getPriorityClass(task.priority)">
+                {{ getPriorityText(task.priority) | titlecase }}
+              </span>
+            </div>
+            
+            <div class="task-details" *ngIf="task.assigneeId">
+              <span class="assignee">{{ getUserName(task.assigneeId) }}</span>
+            </div>
+            
+            <div class="task-details" *ngIf="task.dueDate">
+              <span class="due-date">{{ formatDate(task.dueDate) }}</span>
+            </div>
+          </div>
+          
+          <div class="task-card-actions">
+            <button class="btn-icon" (click)="openTaskForm(task)" title="Edit">
+              <span class="icon-emoji">✏️</span>
+            </button>
+            <button class="btn-icon danger" (click)="deleteTask(task)" title="Delete">
+              <span class="icon-emoji">🗑️</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="kanban-column" 
+         cdkDropList
+         id="cancelled"
+         [cdkDropListData]="getTasksByStatus(TaskStatus.CANCELLED)"
+         (cdkDropListDropped)="onStatusDrop($event, TaskStatus.CANCELLED)"
+         [class]="'status-' + TaskStatus.CANCELLED"
+         [cdkDropListConnectedTo]="['pending', 'in_progress', 'completed', 'cancelled']">
+      <div class="column-header">
+        <h3>Cancelled</h3>
+        <span class="task-count">{{ getTasksByStatus(TaskStatus.CANCELLED).length }}</span>
+      </div>
+      <div class="column-content">
+        <div class="task-card" 
+             cdkDrag
+             [cdkDragData]="task"
+             (cdkDragStarted)="onTaskDragStarted($event, task)"
+             (cdkDragEnded)="onTaskDragEnded($event)"
+             *ngFor="let task of getTasksByStatus(TaskStatus.CANCELLED)" 
+             [class.dragging]="draggedTask()?.id === task.id">
+          
+          <div class="task-card-header">
+            <div class="drag-handle" cdkDragHandle>
+              <span class="icon-emoji">⋮⋮</span>
+            </div>
+            <h4 class="task-title">{{ task.title }}</h4>
+          </div>
+          
+          <div class="task-card-content">
+            <p class="task-description" *ngIf="task.description">{{ task.description }}</p>
+            
+            <div class="task-meta">
+              <span class="task-id">#{{ task.id }}</span>
+              <span class="priority-badge" [class]="getPriorityClass(task.priority)">
+                {{ getPriorityText(task.priority) | titlecase }}
+              </span>
+            </div>
+            
+            <div class="task-details" *ngIf="task.assigneeId">
+              <span class="assignee">{{ getUserName(task.assigneeId) }}</span>
+            </div>
+            
+            <div class="task-details" *ngIf="task.dueDate">
+              <span class="due-date">{{ formatDate(task.dueDate) }}</span>
+            </div>
+          </div>
+          
+          <div class="task-card-actions">
+            <button class="btn-icon" (click)="openTaskForm(task)" title="Edit">
+              <span class="icon-emoji">✏️</span>
+            </button>
+            <button class="btn-icon danger" (click)="deleteTask(task)" title="Delete">
+              <span class="icon-emoji">🗑️</span>
+            </button>
           </div>
         </div>
       </div>

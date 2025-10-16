@@ -646,3 +646,272 @@
   line-height: 1;
   vertical-align: middle;
 }
+
+// Kanban Board Styles
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  min-height: 600px;
+}
+
+.kanban-column {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: all 0.2s ease;
+
+  &.status-pending {
+    border-top: 4px solid #f59e0b;
+  }
+
+  &.status-in_progress {
+    border-top: 4px solid #3b82f6;
+  }
+
+  &.status-completed {
+    border-top: 4px solid #10b981;
+  }
+
+  &.status-cancelled {
+    border-top: 4px solid #ef4444;
+  }
+
+  &.cdk-drop-list-dragging {
+    background: #f0f9ff;
+    border: 2px dashed #3b82f6;
+  }
+}
+
+.column-header {
+  padding: 1rem;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #374151;
+  }
+
+  .task-count {
+    background: #e2e8f0;
+    color: #6b7280;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+}
+
+.column-content {
+  padding: 1rem;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+// Task Card Styles
+.task-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+  cursor: grab;
+  transition: all 0.2s ease;
+  position: relative;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+
+  &.cdk-drag-preview {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    transform: rotate(5deg);
+    border: 2px solid #3b82f6;
+  }
+
+  &.cdk-drag-placeholder {
+    opacity: 0.3;
+    background: #f0f9ff;
+    border: 2px dashed #3b82f6;
+  }
+
+  &.cdk-drag-animating {
+    transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  &.dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+  }
+
+  &.overdue {
+    border-left: 4px solid #ef4444;
+    background: #fef2f2;
+  }
+}
+
+.task-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+
+  .drag-handle {
+    cursor: grab;
+    color: #9ca3af;
+    font-size: 1.2rem;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      color: #6b7280;
+      background: #f3f4f6;
+    }
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
+
+  .task-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #111827;
+    flex: 1;
+  }
+}
+
+.task-card-content {
+  .task-description {
+    color: #6b7280;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    margin: 0 0 0.75rem 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .task-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+
+    .task-id {
+      font-size: 0.75rem;
+      color: #9ca3af;
+      font-weight: 500;
+    }
+
+    .priority-badge {
+      font-size: 0.75rem;
+      padding: 0.125rem 0.375rem;
+      border-radius: 4px;
+      font-weight: 500;
+
+      &.priority-low {
+        background: #f0f9ff;
+        color: #0369a1;
+      }
+
+      &.priority-medium {
+        background: #fef3c7;
+        color: #d97706;
+      }
+
+      &.priority-high {
+        background: #fecaca;
+        color: #dc2626;
+      }
+
+      &.priority-urgent {
+        background: #fce7f3;
+        color: #be185d;
+      }
+    }
+  }
+
+  .task-details {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+
+    .assignee {
+      font-weight: 500;
+    }
+
+    .due-date {
+      &.overdue {
+        color: #ef4444;
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+.task-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f3f4f6;
+
+  .btn-icon {
+    padding: 0.375rem;
+    border: none;
+    background: #f3f4f6;
+    color: #6b7280;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+
+    &:hover {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    &.danger:hover {
+      background: #fecaca;
+      color: #dc2626;
+    }
+  }
+}
+
+// Drop zone styling
+.cdk-drop-list {
+  min-height: 200px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+
+  &.cdk-drop-list-receiving {
+    background: #f0f9ff;
+    border: 2px dashed #3b82f6;
+  }
+}
+
+// Drag preview styling
+.cdk-drag-preview {
+  box-sizing: border-box;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  background: white;
+  border: 2px solid #3b82f6;
+}

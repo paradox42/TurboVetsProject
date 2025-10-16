@@ -2,6 +2,7 @@ import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { DragDropModule, CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import { TaskService, AssignableUser } from '../../services/task.service';
 import { AuthService } from '../../services/auth.service';
 import {
@@ -17,7 +18,7 @@ import {
 @Component({
   selector: 'app-tasks',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, DragDropModule],
   templateUrl: './tasks.component.html',
   styleUrl: './tasks.component.scss',
 })
@@ -35,6 +36,9 @@ export class TasksComponent implements OnInit {
   showTaskForm = signal(false);
   isEditing = signal(false);
   assignableUsers = signal<AssignableUser[]>([]);
+
+  // Drag and drop state
+  draggedTask = signal<Task | null>(null);
 
   // Filter form
   filterForm: FormGroup;
@@ -357,6 +361,65 @@ export class TasksComponent implements OnInit {
   getUserName(userId: number): string {
     const user = this.assignableUsers().find(u => u.id === userId);
     return user ? `${user.name} (${user.email})` : 'Unknown User';
+  }
+
+  // Helper method to get tasks by status for Kanban board
+  getTasksByStatus(status: TaskStatus): Task[] {
+    return this.filteredTasks().filter(task => task.status === status);
+  }
+
+  // Drag and drop methods
+  onTaskDragStarted(event: any, task: Task): void {
+    this.draggedTask.set(task);
+  }
+
+  onTaskDragEnded(event: any): void {
+    this.draggedTask.set(null);
+  }
+
+  onStatusDrop(event: CdkDragDrop<Task[]>, newStatus: TaskStatus): void {
+    console.log('Drop event:', event);
+    console.log('New status:', newStatus);
+    
+    if (event.previousContainer === event.container) {
+      // Reordering within the same status column
+      console.log('Reordering within same column');
+      moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+      this.updateTaskOrder();
+    } else {
+      // Moving between different status columns
+      const task = event.previousContainer.data[event.previousIndex];
+      console.log('Moving task between columns:', task);
+      
+      if (task) {
+        // Update the task status in the backend
+        this.updateTaskStatus(task, newStatus);
+        
+        // Update local state immediately for better UX
+        this.updateLocalTaskStatus(task.id, newStatus);
+      }
+    }
+  }
+
+  private updateTaskOrder(): void {
+    // Refresh the filtered tasks to reflect any reordering
+    this.applyFilters();
+  }
+
+  private updateLocalTaskStatus(taskId: number, newStatus: TaskStatus): void {
+    // Update the task status in the local state immediately
+    const currentTasks = this.tasks();
+    console.log('Current tasks before update:', currentTasks.length);
+    
+    const updatedTasks = currentTasks.map(task => 
+      task.id === taskId ? { ...task, status: newStatus } : task
+    );
+    
+    console.log('Updated tasks after status change:', updatedTasks.length);
+    console.log('Task with new status:', updatedTasks.find(t => t.id === taskId));
+    
+    this.tasks.set(updatedTasks);
+    this.applyFilters();
   }
 
   // Enum getters for template
