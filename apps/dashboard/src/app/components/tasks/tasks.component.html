@@ -1,4 +1,293 @@
 <div class="tasks-container">
-  <h1>Tasks Management</h1>
-  <p>Task management functionality coming soon...</p>
+  <!-- Header -->
+  <div class="tasks-header">
+    <div class="header-left">
+      <h1>Task Management</h1>
+      <p class="subtitle">Manage and track your tasks efficiently</p>
+    </div>
+    <div class="header-right">
+      <button class="btn btn-primary" (click)="openTaskForm()">
+        <span class="icon-emoji">➕</span>
+        Add New Task
+      </button>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="stats-grid" *ngIf="taskStats().total > 0">
+    <div class="stat-card">
+      <div class="stat-number">{{ taskStats().total }}</div>
+      <div class="stat-label">Total Tasks</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">{{ taskStats().byStatus[TaskStatus.PENDING] || 0 }}</div>
+      <div class="stat-label">To Do</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">{{ taskStats().byStatus[TaskStatus.IN_PROGRESS] || 0 }}</div>
+      <div class="stat-label">In Progress</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">{{ taskStats().byStatus[TaskStatus.COMPLETED] || 0 }}</div>
+      <div class="stat-label">Completed</div>
+    </div>
+    <div class="stat-card urgent" *ngIf="taskStats().overdue > 0">
+      <div class="stat-number">{{ taskStats().overdue }}</div>
+      <div class="stat-label">Overdue</div>
+    </div>
+    <div class="stat-card due-today" *ngIf="taskStats().dueToday > 0">
+      <div class="stat-number">{{ taskStats().dueToday }}</div>
+      <div class="stat-label">Due Today</div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-section">
+    <form [formGroup]="filterForm" class="filters-form">
+      <div class="filter-group">
+        <label for="search">Search</label>
+        <input 
+          type="text" 
+          id="search" 
+          formControlName="search" 
+          placeholder="Search tasks..."
+          class="filter-input"
+        >
+      </div>
+
+      <div class="filter-group">
+        <label for="status">Status</label>
+        <select id="status" formControlName="status" class="filter-select">
+          <option value="all">All Statuses</option>
+          <option [value]="TaskStatus.PENDING">To Do</option>
+          <option [value]="TaskStatus.IN_PROGRESS">In Progress</option>
+          <option [value]="TaskStatus.COMPLETED">Completed</option>
+          <option [value]="TaskStatus.CANCELLED">Cancelled</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="priority">Priority</label>
+        <select id="priority" formControlName="priority" class="filter-select">
+          <option value="all">All Priorities</option>
+          <option [value]="TaskPriority.LOW">Low</option>
+          <option [value]="TaskPriority.MEDIUM">Medium</option>
+          <option [value]="TaskPriority.HIGH">High</option>
+          <option [value]="TaskPriority.URGENT">Urgent</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="sortBy">Sort By</label>
+        <select id="sortBy" formControlName="sortBy" class="filter-select">
+          <option value="createdAt">Created Date</option>
+          <option value="title">Title</option>
+          <option value="status">Status</option>
+          <option value="priority">Priority</option>
+          <option value="dueDate">Due Date</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="sortOrder">Order</label>
+        <select id="sortOrder" formControlName="sortOrder" class="filter-select">
+          <option value="desc">Newest First</option>
+          <option value="asc">Oldest First</option>
+        </select>
+      </div>
+    </form>
+  </div>
+
+  <!-- Error Message -->
+  <div class="error-message" *ngIf="error()">
+    <div class="alert alert-error">
+      {{ error() }}
+      <button class="close-btn" (click)="error.set(null)">&times;</button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="isLoading()">
+    <div class="spinner"></div>
+    <p>Loading tasks...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!isLoading() && filteredTasks().length === 0">
+    <div class="empty-icon">📋</div>
+    <h3>No tasks found</h3>
+    <p *ngIf="tasks().length === 0">
+      Get started by creating your first task!
+    </p>
+    <p *ngIf="tasks().length > 0">
+      No tasks match your current filters. Try adjusting your search criteria.
+    </p>
+    <button class="btn btn-primary" (click)="openTaskForm()" *ngIf="tasks().length === 0">
+      Create First Task
+    </button>
+  </div>
+
+  <!-- Task List -->
+  <div class="tasks-list" *ngIf="!isLoading() && filteredTasks().length > 0">
+    <div class="task-item" 
+         *ngFor="let task of filteredTasks()" 
+         [class.overdue]="isOverdue(task)"
+         [class.completed]="task.status === TaskStatus.COMPLETED">
+      
+      <div class="task-header">
+        <div class="task-title-section">
+          <h3 class="task-title">{{ task.title }}</h3>
+          <div class="task-meta">
+            <span class="task-id">#{{ task.id }}</span>
+            <span class="task-organization" *ngIf="task.organization">
+              {{ task.organization.name }}
+            </span>
+          </div>
+        </div>
+        
+        <div class="task-actions">
+          <select 
+            [(ngModel)]="task.status" 
+            (ngModelChange)="updateTaskStatus(task, $event)"
+            class="status-select"
+            [class]="getStatusClass(task.status)"
+          >
+            <option [value]="TaskStatus.PENDING">To Do</option>
+            <option [value]="TaskStatus.IN_PROGRESS">In Progress</option>
+            <option [value]="TaskStatus.COMPLETED">Completed</option>
+            <option [value]="TaskStatus.CANCELLED">Cancelled</option>
+          </select>
+          
+          <div class="action-buttons">
+            <button class="btn-icon" (click)="openTaskForm(task)" title="Edit">
+              <span class="icon-emoji">✏️</span>
+            </button>
+            <button class="btn-icon danger" (click)="deleteTask(task)" title="Delete">
+              <span class="icon-emoji">🗑️</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="task-content">
+        <p class="task-description">{{ task.description }}</p>
+        
+        <div class="task-details">
+          <div class="task-detail">
+            <span class="detail-label">Priority:</span>
+            <span class="priority-badge" [class]="getPriorityClass(task.priority)">
+              {{ getPriorityText(task.priority) | titlecase }}
+            </span>
+          </div>
+          
+          <div class="task-detail" *ngIf="task.assignee">
+            <span class="detail-label">Assignee:</span>
+            <span class="assignee">{{ task.assignee.name }}</span>
+          </div>
+          
+          <div class="task-detail" *ngIf="task.dueDate">
+            <span class="detail-label">Due Date:</span>
+            <span class="due-date" [class.overdue]="isOverdue(task)">
+              {{ formatDate(task.dueDate) }}
+            </span>
+          </div>
+          
+          <div class="task-detail">
+            <span class="detail-label">Created:</span>
+            <span class="created-date">{{ formatDate(task.createdAt) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Task Form Modal -->
+  <div class="modal-overlay" *ngIf="showTaskForm()" (click)="closeTaskForm()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ isEditing() ? 'Edit Task' : 'Create New Task' }}</h2>
+        <button class="close-btn" (click)="closeTaskForm()">&times;</button>
+      </div>
+      
+      <form [formGroup]="taskForm" (ngSubmit)="saveTask()" class="task-form">
+        <div class="form-group">
+          <label for="title">Title *</label>
+          <input 
+            type="text" 
+            id="title" 
+            formControlName="title" 
+            class="form-input"
+            placeholder="Enter task title"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea 
+            id="description" 
+            formControlName="description" 
+            class="form-textarea"
+            placeholder="Enter task description"
+            rows="4"
+          ></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="status">Status</label>
+            <select id="status" formControlName="status" class="form-select">
+              <option [value]="TaskStatus.PENDING">To Do</option>
+              <option [value]="TaskStatus.IN_PROGRESS">In Progress</option>
+              <option [value]="TaskStatus.COMPLETED">Completed</option>
+              <option [value]="TaskStatus.CANCELLED">Cancelled</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="priority">Priority</label>
+            <select id="priority" formControlName="priority" class="form-select">
+              <option [value]="TaskPriority.LOW">Low</option>
+              <option [value]="TaskPriority.MEDIUM">Medium</option>
+              <option [value]="TaskPriority.HIGH">High</option>
+              <option [value]="TaskPriority.URGENT">Urgent</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="assigneeId">Assignee ID *</label>
+            <input 
+              type="number" 
+              id="assigneeId" 
+              formControlName="assigneeId" 
+              class="form-input"
+              placeholder="User ID"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="dueDate">Due Date</label>
+            <input 
+              type="date" 
+              id="dueDate" 
+              formControlName="dueDate" 
+              class="form-input"
+            >
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeTaskForm()">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="!taskForm.valid">
+            {{ isEditing() ? 'Update Task' : 'Create Task' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>

@@ -15,9 +15,10 @@ export class TasksService {
   async create(createTaskDto: {
     title: string;
     description?: string;
+    status?: string;
     userId: number;
     category?: string;
-    priority?: number;
+    priority?: string;
     dueDate?: Date;
   }): Promise<Task> {
     const task = this.taskRepository.create(createTaskDto);

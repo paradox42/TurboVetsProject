@@ -1,11 +1,346 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { TaskService } from '../../services/task.service';
+import { AuthService } from '../../services/auth.service';
+import {
+  Task,
+  TaskStatus,
+  TaskPriority,
+  TaskFilters,
+  TaskListFilters,
+  CreateTaskRequest,
+  UpdateTaskRequest,
+} from '../../models/task.model';
 
 @Component({
   selector: 'app-tasks',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
   templateUrl: './tasks.component.html',
-  styleUrl: './tasks.component.scss'
+  styleUrl: './tasks.component.scss',
 })
-export class TasksComponent {}
+export class TasksComponent implements OnInit {
+  private taskService = inject(TaskService);
+  private authService = inject(AuthService);
+  private fb = inject(FormBuilder);
+
+  // Signals for reactive state
+  tasks = signal<Task[]>([]);
+  filteredTasks = signal<Task[]>([]);
+  isLoading = signal(false);
+  error = signal<string | null>(null);
+  selectedTask = signal<Task | null>(null);
+  showTaskForm = signal(false);
+  isEditing = signal(false);
+
+  // Filter form
+  filterForm: FormGroup;
+
+  // Computed values
+  taskStats = computed(() => {
+    const tasks = this.tasks();
+    const total = tasks.length;
+    const byStatus = tasks.reduce((acc, task) => {
+      acc[task.status] = (acc[task.status] || 0) + 1;
+      return acc;
+    }, {} as Record<TaskStatus, number>);
+
+    const byPriority = tasks.reduce((acc, task) => {
+      acc[task.priority] = (acc[task.priority] || 0) + 1;
+      return acc;
+    }, {} as Record<TaskPriority, number>);
+
+    const today = new Date().toISOString().split('T')[0];
+    const overdue = tasks.filter(
+      (task) => task.dueDate && task.dueDate < today && task.status !== TaskStatus.COMPLETED
+    ).length;
+
+    const dueToday = tasks.filter(
+      (task) => task.dueDate === today && task.status !== TaskStatus.COMPLETED
+    ).length;
+
+    return { total, byStatus, byPriority, overdue, dueToday };
+  });
+
+  // Task form
+  taskForm: FormGroup;
+
+  constructor() {
+    this.filterForm = this.fb.group({
+      search: [''],
+      status: ['all'],
+      priority: ['all'],
+      assigneeId: ['all'],
+      sortBy: ['createdAt'],
+      sortOrder: ['desc'],
+    });
+
+    this.taskForm = this.fb.group({
+      title: [''],
+      description: [''],
+      status: [TaskStatus.PENDING],
+      priority: [TaskPriority.MEDIUM],
+      assigneeId: [null],
+      dueDate: [''],
+    });
+  }
+
+  ngOnInit(): void {
+    this.loadTasks();
+
+    // Watch filter changes
+    this.filterForm.valueChanges.subscribe(() => {
+      this.applyFilters();
+    });
+  }
+
+  loadTasks(): void {
+    this.isLoading.set(true);
+    this.error.set(null);
+
+    // Use appropriate API based on user role
+    const taskObservable =
+      this.authService.isAdmin() || this.authService.isOwner()
+        ? this.taskService.getAllTasksAdmin()
+        : this.taskService.getAllTasks();
+
+    taskObservable.subscribe({
+      next: (tasks) => {
+        this.tasks.set(tasks);
+        this.applyFilters();
+        this.isLoading.set(false);
+      },
+      error: (error) => {
+        this.error.set('Failed to load tasks');
+        this.isLoading.set(false);
+        console.error('Error loading tasks:', error);
+      },
+    });
+  }
+
+  applyFilters(): void {
+    const filters = this.filterForm.value;
+    let filtered = [...this.tasks()];
+
+    // Apply search filter
+    if (filters.search) {
+      const searchTerm = filters.search.toLowerCase();
+      filtered = filtered.filter(
+        (task) =>
+          task.title.toLowerCase().includes(searchTerm) ||
+          task.description.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    // Apply status filter
+    if (filters.status !== 'all') {
+      filtered = filtered.filter((task) => task.status === filters.status);
+    }
+
+    // Apply priority filter
+    if (filters.priority !== 'all') {
+      filtered = filtered.filter((task) => task.priority === filters.priority);
+    }
+
+    // Apply assignee filter
+    if (filters.assigneeId !== 'all') {
+      filtered = filtered.filter((task) => task.assigneeId === filters.assigneeId);
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      const aValue = this.getSortValue(a, filters.sortBy);
+      const bValue = this.getSortValue(b, filters.sortBy);
+
+      if (filters.sortOrder === 'asc') {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      } else {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      }
+    });
+
+    this.filteredTasks.set(filtered);
+  }
+
+  private getSortValue(task: Task, sortBy: string): any {
+    switch (sortBy) {
+      case 'title':
+        return task.title.toLowerCase();
+      case 'status':
+        return task.status;
+      case 'priority':
+        return task.priority;
+      case 'dueDate':
+        return task.dueDate || '';
+      case 'createdAt':
+        return task.createdAt;
+      default:
+        return task.createdAt;
+    }
+  }
+
+  openTaskForm(task?: Task): void {
+    if (task) {
+      this.isEditing.set(true);
+      this.selectedTask.set(task);
+      this.taskForm.patchValue({
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        priority: task.priority,
+        assigneeId: task.assigneeId,
+        dueDate: task.dueDate || '',
+      });
+    } else {
+      this.isEditing.set(false);
+      this.selectedTask.set(null);
+      this.taskForm.setValue({
+        title: '',
+        description: '',
+        status: TaskStatus.PENDING,
+        priority: TaskPriority.MEDIUM,
+        assigneeId: null,
+        dueDate: '',
+      });
+    }
+    this.showTaskForm.set(true);
+  }
+
+  closeTaskForm(): void {
+    this.showTaskForm.set(false);
+    this.selectedTask.set(null);
+    this.isEditing.set(false);
+    this.taskForm.reset();
+  }
+
+  saveTask(): void {
+    if (this.taskForm.valid) {
+      const formData = this.taskForm.value;
+
+      if (this.isEditing()) {
+        const taskId = this.selectedTask()!.id;
+        const updateData: UpdateTaskRequest = {
+          title: formData.title,
+          description: formData.description,
+          status: formData.status,
+          priority: formData.priority,
+          assigneeId: formData.assigneeId,
+          dueDate: formData.dueDate || undefined,
+        };
+
+        this.taskService.updateTask(taskId, updateData).subscribe({
+          next: () => {
+            this.loadTasks();
+            this.closeTaskForm();
+          },
+          error: (error) => {
+            this.error.set('Failed to update task');
+            console.error('Error updating task:', error);
+          },
+        });
+      } else {
+        const createData: CreateTaskRequest = {
+          title: formData.title,
+          description: formData.description,
+          status: formData.status,
+          priority: formData.priority,
+          assigneeId: formData.assigneeId,
+          dueDate: formData.dueDate || undefined,
+        };
+
+        this.taskService.createTask(createData).subscribe({
+          next: () => {
+            this.loadTasks();
+            this.closeTaskForm();
+          },
+          error: (error) => {
+            this.error.set('Failed to create task');
+            console.error('Error creating task:', error);
+          },
+        });
+      }
+    }
+  }
+
+  deleteTask(task: Task): void {
+    if (confirm(`Are you sure you want to delete "${task.title}"?`)) {
+      this.taskService.deleteTask(task.id).subscribe({
+        next: () => {
+          this.loadTasks();
+        },
+        error: (error) => {
+          this.error.set('Failed to delete task');
+          console.error('Error deleting task:', error);
+        },
+      });
+    }
+  }
+
+  updateTaskStatus(task: Task, status: TaskStatus): void {
+    const updateData: UpdateTaskRequest = { status };
+    this.taskService.updateTask(task.id, updateData).subscribe({
+      next: () => {
+        this.loadTasks();
+      },
+      error: (error) => {
+        this.error.set('Failed to update task status');
+        console.error('Error updating task status:', error);
+      },
+    });
+  }
+
+  // Helper methods for template
+  getPriorityText(priority: string): string {
+    // Priority is now always a string from the backend
+    return priority;
+  }
+
+  getStatusClass(status: TaskStatus): string {
+    switch (status) {
+      case TaskStatus.PENDING:
+        return 'status-pending';
+      case TaskStatus.IN_PROGRESS:
+        return 'status-in-progress';
+      case TaskStatus.COMPLETED:
+        return 'status-completed';
+      case TaskStatus.CANCELLED:
+        return 'status-cancelled';
+      default:
+        return '';
+    }
+  }
+
+  getPriorityClass(priority: TaskPriority): string {
+    switch (priority) {
+      case TaskPriority.LOW:
+        return 'priority-low';
+      case TaskPriority.MEDIUM:
+        return 'priority-medium';
+      case TaskPriority.HIGH:
+        return 'priority-high';
+      case TaskPriority.URGENT:
+        return 'priority-urgent';
+      default:
+        return '';
+    }
+  }
+
+  formatDate(dateString: string): string {
+    return new Date(dateString).toLocaleDateString();
+  }
+
+  isOverdue(task: Task): boolean {
+    if (!task.dueDate || task.status === TaskStatus.COMPLETED) return false;
+    return new Date(task.dueDate) < new Date();
+  }
+
+  // Enum getters for template
+  get TaskStatus() {
+    return TaskStatus;
+  }
+  get TaskPriority() {
+    return TaskPriority;
+  }
+}

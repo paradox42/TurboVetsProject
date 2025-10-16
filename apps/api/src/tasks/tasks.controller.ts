@@ -4,7 +4,7 @@ import {
   Post,
   Request,
   Body,
-  Patch,
+  Put,
   Param,
   Delete,
   UseGuards,
@@ -142,7 +142,7 @@ export class TasksController {
     return task;
   }
 
-  @Patch(':id')
+  @Put(':id')
   @RequirePermissions('update_task')
   @OrganizationScope('own')
   async update(

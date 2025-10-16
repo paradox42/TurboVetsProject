@@ -26,8 +26,8 @@ import {
     @Column({ type: 'varchar', length: 50, nullable: true })
     category?: string; // 'work', 'personal', etc.
   
-    @Column({ type: 'integer', nullable: true })
-    priority?: number; // 1-5 priority level
+    @Column({ type: 'varchar', length: 20, nullable: true })
+    priority?: string; // 'low', 'medium', 'high', 'urgent'
   
     @Column({ type: 'datetime', nullable: true })
     dueDate?: Date;
