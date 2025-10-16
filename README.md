@@ -129,15 +129,15 @@ npm run seed
 ```mermaid
 erDiagram
     Organization ||--o{ User : contains
-    Organization ||--o{ Role : defines
+    Organization ||--o{ Organization : parent_of
     User ||--o{ Task : creates
-    User }o--|| Role : has
-    Role ||--o{ Permission : grants
-    Task }o--o| User : assigned_to
+    User }o--o{ Role : has
+    Role }o--o{ Permission : grants
     
     Organization {
         int id PK
         string name
+        string description
         int parentId FK
         datetime createdAt
         datetime updatedAt
@@ -149,7 +149,6 @@ erDiagram
         string email
         string password
         int organizationId FK
-        int roleId FK
         datetime createdAt
         datetime updatedAt
     }
@@ -157,7 +156,7 @@ erDiagram
     Role {
         int id PK
         string name
-        int organizationId FK
+        string description
         datetime createdAt
         datetime updatedAt
     }
@@ -175,9 +174,9 @@ erDiagram
         string title
         string description
         string status
+        string category
         string priority
         int userId FK
-        int assigneeId FK
         datetime dueDate
         datetime createdAt
         datetime updatedAt
