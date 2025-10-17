@@ -45,6 +45,7 @@ export class TasksController {
       category?: string;
       priority?: string;
       dueDate?: Date;
+      assigneeId?: number;
     }
   ) {
     // Extract user ID from authenticated user
@@ -142,7 +143,7 @@ export class TasksController {
   @OrganizationScope('own')
   async findOne(@Param('id') id: string, @Request() req: any) {
     const userId = req.user.id;
-    const task = await this.tasksService.findOne(+id, userId);
+    const task = await this.tasksService.findOneInOrganization(+id, userId);
 
     if (!task) {
       throw new NotFoundException('Task not found');
@@ -161,8 +162,8 @@ export class TasksController {
   ) {
     const userId = req.user.id;
 
-    // Check if task exists and belongs to user
-    const existingTask = await this.tasksService.findOne(+id, userId);
+    // Check if task exists and is accessible within organization
+    const existingTask = await this.tasksService.findOneInOrganization(+id, userId);
     if (!existingTask) {
       throw new NotFoundException('Task not found');
     }
@@ -176,8 +177,8 @@ export class TasksController {
   async remove(@Param('id') id: string, @Request() req: any) {
     const userId = req.user.id;
 
-    // Check if task exists and belongs to user
-    const existingTask = await this.tasksService.findOne(+id, userId);
+    // Check if task exists and is accessible within organization
+    const existingTask = await this.tasksService.findOneInOrganization(+id, userId);
     if (!existingTask) {
       throw new NotFoundException('Task not found');
     }

@@ -20,6 +20,7 @@ export class TasksService {
     category?: string;
     priority?: string;
     dueDate?: Date;
+    assigneeId?: number;
   }): Promise<Task> {
     const task = this.taskRepository.create(createTaskDto);
     return await this.taskRepository.save(task);
@@ -27,7 +28,10 @@ export class TasksService {
 
   async findAll(userId: number): Promise<Task[]> {
     return await this.taskRepository.find({
-      where: { userId },
+      where: [
+        { userId }, // Tasks owned by the user
+        { assigneeId: userId } // Tasks assigned to the user
+      ],
       relations: ['user'],
     });
   }
@@ -40,14 +44,36 @@ export class TasksService {
     return task;
   }
 
+  async findOneInOrganization(id: number, userId: number): Promise<Task | null> {
+    // Get accessible user IDs based on organization scope
+    const accessibleUserIds = await this.rbacService.getAccessibleUserIds(
+      userId,
+      'own'
+    );
+    
+    const task = await this.taskRepository.findOne({
+      where: { id, userId: In(accessibleUserIds) },
+      relations: ['user'],
+    });
+    return task;
+  }
+
   async update(
     id: number,
     updateTaskDto: Partial<Task>,
     userId: number
   ): Promise<Task> {
-    await this.taskRepository.update({ id, userId }, updateTaskDto);
+    // First check if the task exists and is accessible
+    const existingTask = await this.findOneInOrganization(id, userId);
+    if (!existingTask) {
+      throw new Error('Task not found or not accessible');
+    }
 
-    const updatedTask = await this.findOne(id, userId);
+    // Update the task
+    await this.taskRepository.update({ id }, updateTaskDto);
+
+    // Return the updated task
+    const updatedTask = await this.findOneInOrganization(id, userId);
     if (!updatedTask) {
       throw new Error('Task not found');
     }
@@ -55,7 +81,14 @@ export class TasksService {
   }
 
   async remove(id: number, userId: number): Promise<void> {
-    await this.taskRepository.delete({ id, userId });
+    // First check if the task exists and is accessible
+    const existingTask = await this.findOneInOrganization(id, userId);
+    if (!existingTask) {
+      throw new Error('Task not found or not accessible');
+    }
+
+    // Delete the task
+    await this.taskRepository.delete({ id });
   }
 
   async findAllInOrganization(userId: number): Promise<Task[]> {

@@ -127,15 +127,27 @@ export class RbacService {
 
       case 'sub':
         // Users in same org and sub-organizations
+        // First get sub-organization IDs
         const subOrgs = await this.organizationRepository.find({
           where: { parent: { id: userOrgId } },
-          relations: ['users'],
         });
-        const subOrgUserIds = subOrgs.flatMap((org) =>
-          org.users.map((u) => u.id)
-        );
+        
+        const subOrgIds = subOrgs.map(org => org.id);
+        
+        // Get users from sub-organizations
+        const subOrgUsers = await this.userRepository.find({
+          where: { organization: { id: In(subOrgIds) } },
+          select: ['id'],
+        });
+        
+        const subOrgUserIds = subOrgUsers.map(u => u.id);
+        
+        // Get users from same organization
         const sameOrgUserIds = await this.getAccessibleUserIds(userId, 'own');
-        return [...sameOrgUserIds, ...subOrgUserIds];
+        
+        // Combine and remove duplicates
+        const allUserIds = [...new Set([...sameOrgUserIds, ...subOrgUserIds])];
+        return allUserIds;
 
       case 'all':
         // All users if admin/owner, otherwise just own org
@@ -219,7 +231,27 @@ export class RbacService {
     organization: { id: number; name: string };
   }[]> {
     try {
-      const accessibleUserIds = await this.getAccessibleUserIds(userId, 'own');
+      // Check user role to determine appropriate scope
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+        relations: ['roles'],
+      });
+
+      if (!user || !user.roles) {
+        return [];
+      }
+
+      const userRoles = user.roles.map(role => role.name);
+      
+      // Determine scope based on user role
+      let scope: 'own' | 'sub' | 'all' = 'own';
+      if (userRoles.includes('owner')) {
+        scope = 'all'; // Owner can assign to anyone
+      } else if (userRoles.includes('admin')) {
+        scope = 'sub'; // Admin can assign to users in their org and sub-orgs
+      }
+
+      const accessibleUserIds = await this.getAccessibleUserIds(userId, scope);
       
       if (accessibleUserIds.length === 0) {
         return [];

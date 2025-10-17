@@ -37,11 +37,14 @@ import {
     @JoinColumn({ name: 'userId' })
     user!: User;
   
-    @Column()
-    userId!: number;
-  
-    @CreateDateColumn()
-    createdAt!: Date;
+  @Column()
+  userId!: number;
+
+  @Column({ nullable: true })
+  assigneeId?: number;
+
+  @CreateDateColumn()
+  createdAt!: Date;
   
     @UpdateDateColumn()
     updatedAt!: Date;
